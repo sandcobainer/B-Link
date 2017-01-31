@@ -17,6 +17,9 @@ import cv2
 from __builtin__ import bool
 from ctypes import *
 import sys
+from pygame.examples.aliens import Player
+import atexit
+from signal import SIGTERM
 print sys.path
 import os, random
 from pygame import *
@@ -28,6 +31,7 @@ from newtry import *
 # WIN???
 SCRIPT_PATH=sys.path[0]
 q = Queue()
+
 # NO_GIF_TILES -- tile numbers which do not correspond to a GIF file
 # currently only "23" for the high-score list
 NO_GIF_TILES=[23]
@@ -1330,7 +1334,6 @@ class level ():
         player.anim_pacmanCurrent = player.anim_pacmanS
         player.animFrame = 3
 
-
 def CheckIfCloseButton(events):
     for event in events: 
         if event.type == QUIT: 
@@ -1341,7 +1344,7 @@ def blink(q):
         eye_cascade = cv2.CascadeClassifier('classifiers/haarcascade_eye2.xml')
         
         cap = cv2.VideoCapture(0)
-        
+
         while 1:
             ret, img = cap.read()
             gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -1358,16 +1361,17 @@ def blink(q):
                 if (len(eyes)==0):
                     print "eyes closed"
                     q.put(True)
+                 #   except     
                     #blink = True
                     #thisLevel.LoadLevel(random.randint(1,10))
                     
-                else:
-                    print "open bro"
+                #else:
+                    #print "open bro"
                     #
                 for (ex,ey,ew,eh) in eyes:
                     cv2.rectangle(roi_color,(ex,ey),(ex+ew,ey+eh),(0,255,0),2)
         
-            cv2.imshow('img',img)
+            #cv2.imshow('img',img)
             k = cv2.waitKey(30) & 0xff
             if k == 27:
                 break
@@ -1376,7 +1380,7 @@ def blink(q):
         cv2.destroyAllWindows() 
 
 def CheckInputs(): 
-    
+    global camquit
     if thisGame.mode == 1:
         if pygame.key.get_pressed()[ pygame.K_RIGHT ] or (js!=None and js.get_axis(JS_XAXIS)>0):
             if not thisLevel.CheckIfHitWall((player.x + player.speed, player.y), (player.nearestRow, player.nearestCol)): 
@@ -1419,17 +1423,15 @@ def CheckInputs():
             #while 1:
             print "***************************************"
             #try:
-            data = q.get()
-            print "data received from process2 -",data
+            #data = q.get()
+            #print "data received from process2 -",data
             print "some action"
             print "***************************************\n"
             #except Empty:
                 #print "Queue empty terminating process1"
                 #break
     #            print "error creating thread" 
-            #p.terminate()
-
-    
+            #p.terminate()    
 #      _____________________________________________
 # ___/  function: Get ID-Tilename Cross References  \______________________________________ 
     
@@ -1496,6 +1498,7 @@ def GetCrossRef ():
 #      __________________
 # ___/  main code block  \_____________________________________________________
 
+camquit = 0
 # create the pacman
 player = pacman()
 
@@ -1507,7 +1510,7 @@ ghosts = {}
 for i in range(0, 6, 1):
     # remember, ghost[4] is the blue, vulnerable ghost
     ghosts[i] = ghost(i)
-ghosts[7] = ghost(5)
+#ghosts[7] = ghost(5)
 # create piece of fruit
 thisFruit = fruit()
 
@@ -1534,6 +1537,8 @@ while True:
     try:
         data = q.get_nowait()
         print "data received from blink : " + str(data)
+        player.x = player.homeX
+        player.y = player.homeY
     except Empty:
         print "no data for now"
     
