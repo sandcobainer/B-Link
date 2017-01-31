@@ -15,18 +15,19 @@
 import numpy as np
 import cv2
 from __builtin__ import bool
-from ctypes.wintypes import BOOLEAN
+from ctypes import *
 import sys
 print sys.path
 import os, random
 from pygame import *
 import pygame
 from numpy.matlib import rand
-import thread
-from newtry import EyeBlinkDetector
+from multiprocessing import Process, Queue
+from Queue import Empty
+from newtry import *
 # WIN???
 SCRIPT_PATH=sys.path[0]
-
+q = Queue()
 # NO_GIF_TILES -- tile numbers which do not correspond to a GIF file
 # currently only "23" for the high-score list
 NO_GIF_TILES=[23]
@@ -47,8 +48,8 @@ pygame.mixer.init()
 
 clock = pygame.time.Clock()
 pygame.init()
-ebd = EyeBlinkDetector()
-ebd.blink()
+#ebd = EyeBlinkDetector()
+#ebd.blink()
 window = pygame.display.set_mode((1, 1))
 pygame.display.set_caption("Pacman")
 
@@ -1334,7 +1335,7 @@ def CheckIfCloseButton(events):
     for event in events: 
         if event.type == QUIT: 
             sys.exit(0)
-def blink():
+def blink(q):
         face_cascade = cv2.CascadeClassifier('classifiers/haarcascade_frontalface_default2.xml')
         #https://github.com/Itseez/opencv/blob/master/data/haarcascades/haarcascade_eye.xml
         eye_cascade = cv2.CascadeClassifier('classifiers/haarcascade_eye2.xml')
@@ -1355,11 +1356,14 @@ def blink():
                 eyes = eye_cascade.detectMultiScale(roi_gray)
                 blink=False
                 if (len(eyes)==0):
-                    blink = True
-                    thisLevel.LoadLevel(random.randint(1,10))
+                    print "eyes closed"
+                    q.put(True)
+                    #blink = True
+                    #thisLevel.LoadLevel(random.randint(1,10))
                     
                 else:
                     print "open bro"
+                    #
                 for (ex,ey,ew,eh) in eyes:
                     cv2.rectangle(roi_color,(ex,ey),(ex+ew,ey+eh),(0,255,0),2)
         
@@ -1401,11 +1405,29 @@ def CheckInputs():
         if pygame.key.get_pressed()[ pygame.K_RETURN ] or (js!=None and js.get_button(JS_STARTBUTTON)):
             #thisGame.StartNewGame()
             #try:
-                thread.start_new_thread(blink,())
-                thread.start_new_thread(thisGame.StartNewGame)
+                #thread.start_new_thread(blink,())
+                #thread.start_new_thread(thisGame.StartNewGame)
             #except:
-                print "error creating thread" 
-            
+            p = Process(target=blink, args=[q,])
+            print "Starting function1 from process process2.py \n"
+            p.start()
+            p.is_alive()
+            print "Control returned to pacman from blink.py \n"
+            print "starting pacman \n"
+            thisGame.StartNewGame()
+            print "Waiting for data from Process2 \n"
+            #while 1:
+            print "***************************************"
+            #try:
+            data = q.get()
+            print "data received from process2 -",data
+            print "some action"
+            print "***************************************\n"
+            #except Empty:
+                #print "Queue empty terminating process1"
+                #break
+    #            print "error creating thread" 
+            #p.terminate()
 
     
 #      _____________________________________________
@@ -1509,7 +1531,12 @@ if pygame.joystick.get_count()>0:
 else: js=None
 
 while True: 
-
+    try:
+        data = q.get_nowait()
+        print "data received from blink : " + str(data)
+    except Empty:
+        print "no data for now"
+    
     CheckIfCloseButton( pygame.event.get() )
     
     if thisGame.mode == 1:
@@ -1529,7 +1556,7 @@ while True:
         if thisGame.modeTimer == 90:
             thisLevel.Restart()
         
-            thread.start_new_thread(thisLevel.Restart())    
+            thisLevel.Restart()    
             thisGame.lives -= 1
             if thisGame.lives == -1:
                 thisGame.updatehiscores(thisGame.score)

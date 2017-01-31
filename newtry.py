@@ -1,7 +1,7 @@
 import numpy as np
 import cv2
 from __builtin__ import bool
-from ctypes.wintypes import BOOLEAN
+from ctypes import *
 
 
 # multiple cascades: https://github.com/Itseez/opencv/tree/master/data/haarcascades
