@@ -31,7 +31,7 @@ from newtry import *
 # WIN???
 SCRIPT_PATH=sys.path[0]
 q = Queue()
-
+exq = Queue()
 # NO_GIF_TILES -- tile numbers which do not correspond to a GIF file
 # currently only "23" for the high-score list
 NO_GIF_TILES=[23]
@@ -1338,7 +1338,7 @@ def CheckIfCloseButton(events):
     for event in events: 
         if event.type == QUIT: 
             sys.exit(0)
-def blink(q):
+def blink(q,exq):
         face_cascade = cv2.CascadeClassifier('classifiers/haarcascade_frontalface_default2.xml')
         #https://github.com/Itseez/opencv/blob/master/data/haarcascades/haarcascade_eye.xml
         eye_cascade = cv2.CascadeClassifier('classifiers/haarcascade_eye2.xml')
@@ -1373,14 +1373,17 @@ def blink(q):
         
             #cv2.imshow('img',img)
             k = cv2.waitKey(30) & 0xff
-            if k == 27:
-                break
-        
+            try:
+                if k == 27 or exq.get_nowait() == True:
+                    break
+            except Empty:
+                print ""
+                    
         cap.release()
         cv2.destroyAllWindows() 
 
 def CheckInputs(): 
-    global camquit
+    global p
     if thisGame.mode == 1:
         if pygame.key.get_pressed()[ pygame.K_RIGHT ] or (js!=None and js.get_axis(JS_XAXIS)>0):
             if not thisLevel.CheckIfHitWall((player.x + player.speed, player.y), (player.nearestRow, player.nearestCol)): 
@@ -1403,6 +1406,9 @@ def CheckInputs():
                 player.velY = -player.speed
                 
     if pygame.key.get_pressed()[ pygame.K_ESCAPE ]:
+        print "PID",p.pid
+        exq.put(True)
+        #os.kill(p.pid, SIGTERM)
         sys.exit(0)
             
     elif thisGame.mode == 3:
@@ -1412,8 +1418,9 @@ def CheckInputs():
                 #thread.start_new_thread(blink,())
                 #thread.start_new_thread(thisGame.StartNewGame)
             #except:
-            p = Process(target=blink, args=[q,])
+            p = Process(target=blink, args=[q,exq])
             print "Starting function1 from process process2.py \n"
+            p.daemon = True
             p.start()
             p.is_alive()
             print "Control returned to pacman from blink.py \n"
@@ -1501,7 +1508,7 @@ def GetCrossRef ():
 camquit = 0
 # create the pacman
 player = pacman()
-
+p = Process(target=blink, args=[q,])
 # create a path_finder object
 path = path_finder()
 
