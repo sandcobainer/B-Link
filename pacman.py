@@ -3,15 +3,9 @@
 # pacman.pyw
 # By David Reilly
 
-# Modified by Andy Sommerville, 8 October 2007:
-# - Changed hard-coded DOS paths to os.path calls
-# - Added constant SCRIPT_PATH (so you don't need to have pacman.pyw and res in your cwd, as long
-# -   as those two are in the same directory)
-# - Changed text-file reading to accomodate any known EOLn method (\n, \r, or \r\n)
-# - I (happily) don't have a Windows box to test this. Blocks marked "WIN???"
-# -   should be examined if this doesn't run in Windows
-# - Added joystick support (configure by changing JS_* constants)
-# - Added a high-score list. Depends on wx for querying the user's name
+# Modified by Sandeep and Sid for K-State Hackathon, October 2016:
+# This Python file adds Computer Vision to the Pacman game. Each time a user blinks, 
+# the world will change and repopulate the screen creating an interesting user interaction system.
 import numpy as np
 import cv2
 from __builtin__ import bool
